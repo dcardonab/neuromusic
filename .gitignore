@@ -6,3 +6,4 @@
 # caches
 neuromusic/__pycache__/
 neuromusic/muse/__pycache__/
+data/.ipynb_checkpoints/

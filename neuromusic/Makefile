@@ -5,5 +5,7 @@ ADDRESS= "00:55:DA:B7:74:0D"
 connect:
 	@python muse-lsl.py --address ${ADDRESS}
 
-reqs:
-	@$(shell conda list -e > requirements.txt)
+check_reqs:
+	@echo -n "are you sure you're in the right env to overwrite requirements.txt? [y/n]" && read ans && [ $${ans:-n}=y ]
+reqs: check_reqs
+	@$(shell conda list -e > ../requirements.txt)
