@@ -1,0 +1,4 @@
+# Don't push the following directories and files to remote GIthub server
+
+# config settings from my ide
+.vscode/
