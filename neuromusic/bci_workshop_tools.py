@@ -14,12 +14,16 @@ from subprocess import call
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from sklearn import svm
 from scipy.signal import butter, lfilter, lfilter_zi
+from mne.time_frequency.multitaper import psd_array_multitaper
 
-
+################
+#### PARAMS ####
+################
 NOTCH_B, NOTCH_A = butter(4, np.array([55, 65])/(256/2), btype='bandstop')
-
+NW = 3 #normalized half-bandwidth of the data tapers for multitaper
 
 def plot_multichannel(data, params=None):
     """Create a plot to present multichannel data.
@@ -96,6 +100,7 @@ def epoch(data, samples_epoch, samples_overlap=0):
 
 def compute_feature_vector(eegdata, fs):
     """Extract the features from the EEG.
+    mean power in canonical bands, averaged over all channels
 
     Args:
         eegdata (numpy.ndarray): array of dimension [number of samples,
@@ -106,39 +111,43 @@ def compute_feature_vector(eegdata, fs):
         (numpy.ndarray): feature matrix of shape [number of feature points,
             number of different features]
     """
-    # 1. Compute the PSD
-    winSampleLength, nbCh = eegdata.shape
+    # 1. Compute the PSD using multitaper method
+    winSampleLength, n_ch = eegdata.shape
+    # bandwidth = NW*2*fs/(winSampleLength) #from mne multitaper function
 
-    # Apply Hamming window
-    w = np.hamming(winSampleLength)
-    dataWinCentered = eegdata - np.mean(eegdata, axis=0)  # Remove offset
-    dataWinCenteredHam = (dataWinCentered.T*w).T
-
-    NFFT = nextpow2(winSampleLength)
-    Y = np.fft.fft(dataWinCenteredHam, n=NFFT, axis=0)/winSampleLength
-    PSD = 2*np.abs(Y[0:int(NFFT/2), :])
-    f = fs/2*np.linspace(0, 1, int(NFFT/2))
-
-    # SPECTRAL FEATURES
+    psd,f = psd_array_multitaper(eegdata.T,
+                                 fs,
+                                 adaptive=True,
+                                 normalization='full',
+                                 verbose=False)
+    
     # Average of band powers
     # Delta <4
     ind_delta, = np.where(f < 4)
-    meanDelta = np.mean(PSD[ind_delta, :], axis=0)
+    delta = np.mean(psd[:, ind_delta])
     # Theta 4-8
     ind_theta, = np.where((f >= 4) & (f <= 8))
-    meanTheta = np.mean(PSD[ind_theta, :], axis=0)
+    theta = np.mean(psd[:, ind_theta])
     # Alpha 8-12
     ind_alpha, = np.where((f >= 8) & (f <= 12))
-    meanAlpha = np.mean(PSD[ind_alpha, :], axis=0)
+    alpha = np.mean(psd[:, ind_alpha])
     # Beta 12-30
-    ind_beta, = np.where((f >= 12) & (f < 30))
-    meanBeta = np.mean(PSD[ind_beta, :], axis=0)
+    ind_beta = np.where((f >= 12) & (f < 30))
+    beta = np.mean(psd[:, ind_beta])
+    # Gamma >30
+    ind_gamma = np.where(f > 30)
+    gamma = np.mean(psd[:, ind_gamma])
 
-    feature_vector = np.concatenate((meanDelta, meanTheta, meanAlpha,
-                                     meanBeta), axis=0)
+    feature_vector = pd.DataFrame({'delta':delta, 
+                                   'theta': theta, 
+                                   'alpha': alpha,
+                                   'beta' : beta, 
+                                   'gamma' : gamma},
+                                  index=[0])
 
-    feature_vector = np.log10(feature_vector)
 
+    # convert to decibles
+    feature_vector = 10*np.log10(feature_vector)
     return feature_vector
 
 

@@ -2,3 +2,7 @@
 
 # config settings from my ide
 .vscode/
+
+# caches
+neuromusic/__pycache__/
+neuromusic/muse/__pycache__/
