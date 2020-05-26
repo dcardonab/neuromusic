@@ -15,3 +15,16 @@ similar way.
 
 I’ll start looking into this and we can see how the information can be passed when we meet.
 Hopefully I’ll have something beeping by then.
+
+-------------------------------
+
+I found these links to run a synthesizer via python. It's a good starting point:
+https://pypi.org/project/synthesizer/#description
+https://synthesizer.readthedocs.io/en/latest/index.html
+
+I am thinking though, in the long run, it might be more effective for me to transmit your data into other applications that
+are designed for audio and visuals. I am thinking of Max or PureData for audio, and Processing if we were to make visuals.
+I believe we can do this by transferring OSC information via UDP.
+
+I will start my research on how to send data out of python.
+
